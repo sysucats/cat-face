@@ -8,7 +8,7 @@ from torch import Tensor
 from torch.utils.data import Dataset
 from tqdm import tqdm
 
-IMG_SIDE_LEN = 500
+IMG_SIDE_LEN = 128
 BALANCE_NUM = 50
 
 class CatPhotoDatasetHelper:

@@ -8,7 +8,7 @@ import argparse
 import os
 from tqdm import tqdm
 
-BATCH_SIZE = 8
+BATCH_SIZE = 64
 
 def main():
     # 解析命令行参数
@@ -45,7 +45,7 @@ def main():
     if args.resume:
         print("==> resuming from checkpoint...")
         assert os.path.isdir("checkpoint"), "### checkpoint not found!"
-        checkpoint = torch.load("./checkpoint/ckpt.pth", map_location='cpu')
+        checkpoint = torch.load("./checkpoint/ckpt.pth", map_location="cpu")
         model.load_state_dict(checkpoint["model"])
         bestACC = checkpoint["ACC"]
         startEpoch = checkpoint["epoch"] + 1
@@ -64,7 +64,7 @@ def main():
         trainLoss = 0.
         trainNum = 0
         trainCorrect = 0
-        for x, y in tqdm(trainLoader, leave=False, desc="traning"):
+        for x, y in tqdm(trainLoader, leave=False, desc="training"):
             x, y = x.to(device), y.to(device)
             optimizer.zero_grad()
             out = model(x)
@@ -101,7 +101,7 @@ def main():
             print("==> saving checkpoint...")
             state = {
                 "model": model.state_dict(),
-                "acc": ACC,
+                "ACC": ACC,
                 "epoch": epoch,
                 "catIDs": dataHelper.catIDs
             }
