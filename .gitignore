@@ -1,0 +1,5 @@
+node_modules/
+photos/
+checkpoint/
+.DS_Store
+log.txt

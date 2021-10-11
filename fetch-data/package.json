@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "@cloudbase/node-sdk": "^2.7.1"
+  }
+}
