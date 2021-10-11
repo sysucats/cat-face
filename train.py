@@ -8,7 +8,7 @@ import argparse
 import os
 from tqdm import tqdm
 
-BATCH_SIZE = 64
+BATCH_SIZE = 8
 
 def main():
     # 解析命令行参数

@@ -1,4 +1,3 @@
-import enum
 from typing import List, Any, Tuple
 
 import os
@@ -8,7 +7,7 @@ from torch import Tensor
 from torch.utils.data import Dataset
 from tqdm import tqdm
 
-IMG_SIDE_LEN = 128
+IMG_SIDE_LEN = 500
 BALANCE_NUM = 50
 
 class CatPhotoDatasetHelper:
