@@ -4,7 +4,7 @@ from model import ResNet
 import os
 import json
 
-IMG_SIDE_LEN = 128
+IMG_SIDE_LEN = 224
 
 print("==> loading model...")
 assert os.path.isdir("checkpoint"), "### checkpoint not found!"

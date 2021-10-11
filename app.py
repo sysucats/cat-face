@@ -9,10 +9,12 @@ import os
 import json
 
 
-IMG_SIDE_LEN = 128
-RETURN_NUM = 3
-HOST_NAME="localhost"
+HOST_NAME="0.0.0.0"
 PORT=3456
+
+IMG_SIDE_LEN = 224
+
+MAX_RET_NUM = 20 # 最多可以返回的猫猫个数
 
 assert os.path.isdir("onnx"), "### onnx not found!"
 with open("onnx/cat-ids.json", "r") as fp:
@@ -41,12 +43,13 @@ app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024
 def recognizeCatPhoto():
     try:
         photo = request.files['photo']
-        img = Image.open(photo).resize((IMG_SIDE_LEN, IMG_SIDE_LEN))
+        img = Image.open(photo).convert("RGB").resize((IMG_SIDE_LEN, IMG_SIDE_LEN))
         imgData = np.array(img, dtype=np.float32).transpose((2, 0, 1)) / 255
-        prob = softmax(model.run(["prob"], {"photo": imgData[np.newaxis, :]})[0][0], axis=0)
-        catIDWithProb = sorted(zip(catIDs, prob.tolist()), key=lambda item: item[1], reverse=True)
-        # 返回概率最高的前RETURN_NUM名及其对应概率
-        return wrapOKRetVal(catIDWithProb[:RETURN_NUM])
+        # inference
+        probs = softmax(model.run(["prob"], {"photo": imgData[np.newaxis, :]})[0][0], axis=0).tolist()
+        # 按概率排序
+        catIDWithProb = sorted([dict(catID=catIDs[i], prob=probs[i]) for i in range(len(catIDs))], key=lambda item: item['prob'], reverse=True)
+        return wrapOKRetVal(catIDWithProb[:MAX_RET_NUM])
     except BaseException as err:
         return wrapErrorRetVal(str(err))
 

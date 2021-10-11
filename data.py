@@ -50,13 +50,13 @@ class CatPhotoDatasetHelper:
             subProcessBar = tqdm(total=numPhotos, leave=False, desc=catID)
 
             for i in range(0, numTrain):
-                img = Image.open(photos[i]).resize((IMG_SIDE_LEN, IMG_SIDE_LEN))
+                img = Image.open(photos[i]).convert("RGB").resize((IMG_SIDE_LEN, IMG_SIDE_LEN))
                 imgData = np.array(img, dtype=np.float32).transpose((2, 0, 1)) / 255
                 trainData.append(Tensor(imgData))
                 subProcessBar.update(1)
             
             for i in range(numTrain, numPhotos):
-                img = Image.open(photos[i]).resize((IMG_SIDE_LEN, IMG_SIDE_LEN))
+                img = Image.open(photos[i]).convert("RGB").resize((IMG_SIDE_LEN, IMG_SIDE_LEN))
                 imgData = np.array(img, dtype=np.float32).transpose((2, 0, 1)) / 255
                 testData.append(Tensor(imgData))
                 subProcessBar.update(1)
