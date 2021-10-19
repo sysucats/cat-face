@@ -2,9 +2,11 @@
 node_modules/
 # 拉取的图片
 photos/
+crop-photos/
 # 模型文件
 checkpoint/
-onnx/
+*.pt
+*.pth
 # Python 垃圾
 __pycache__/
 # MacOS的垃圾

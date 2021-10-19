@@ -2,18 +2,21 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torchvision import transforms
-from data import CatPhotoDatasetHelper, IMG_SIDE_LEN
+from data import CatPhotoDatasetHelper
 from model import ResNet
 import argparse
 import os
 from tqdm import tqdm
 
-BATCH_SIZE = 8
-
 def main():
     # 解析命令行参数
     parser = argparse.ArgumentParser(description="Cat Face Recognization")
+    parser.add_argument("--data", default="crop-photos", type=str, help="photo data directory")
+    parser.add_argument("--size", default=100, type=int, help="image size")
+    parser.add_argument("--filter", default=5, type=int, help="cats whose photo number are less than this would be filtered")
+    parser.add_argument("--balance", default=30, type=int, help="dataset class pseudo balance number")
     parser.add_argument("--lr", default=3e-4, type=float, help="learning rate")
+    parser.add_argument("--batch", default=8, type=int, help="batch size")
     parser.add_argument("--resume", action="store_true", help="resume from checkpoint")
     args = parser.parse_args()
 
@@ -24,14 +27,17 @@ def main():
     print("==> preparing data...")
 
     transform = transforms.Compose([
-        transforms.RandomCrop(IMG_SIDE_LEN, padding=IMG_SIDE_LEN // 8), # 四周填充1/8大小后再随机裁剪为IMG_SIDE_LENxIMG_SIDE_LEN
+        transforms.RandomCrop(args.size, padding=args.size // 8, fill=114), # 四周填充1/8大小后再随机裁剪为args.sizexargs.size
         transforms.RandomHorizontalFlip(p=0.5), # 以0.5的概率发生水平翻转
+        transforms.RandomVerticalFlip(p=0.5), # 以0.5的概率发生垂直翻转
+        transforms.RandomRotation(degrees=15, fill=114), # 随机旋转-15~15度
+        transforms.ColorJitter(brightness=0.1, contrast=0.1, saturation=0.1), # 亮度、对比度、饱和度均在0.9~1.1间随机变化
     ])
 
-    dataHelper = CatPhotoDatasetHelper(root="fetch-data/photos", transform=transform)
+    dataHelper = CatPhotoDatasetHelper(root=args.data, size=args.size, filterNum=args.filter, balanceNum=args.balance, transform=transform)
 
-    trainLoader = torch.utils.data.DataLoader(dataset=dataHelper.trainDataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=2)
-    testLoader = torch.utils.data.DataLoader(dataset=dataHelper.testDataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=2)
+    trainLoader = torch.utils.data.DataLoader(dataset=dataHelper.trainDataset, batch_size=args.batch, shuffle=True, num_workers=2)
+    testLoader = torch.utils.data.DataLoader(dataset=dataHelper.testDataset, batch_size=args.batch, shuffle=False, num_workers=2)
     
     # 构建模型
     print("==> building model...")

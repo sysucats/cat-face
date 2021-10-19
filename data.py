@@ -7,11 +7,8 @@ from torch import Tensor
 from torch.utils.data import Dataset
 from tqdm import tqdm
 
-IMG_SIDE_LEN = 500
-BALANCE_NUM = 50
-
 class CatPhotoDatasetHelper:
-    def __init__(self, root: str, transform: Any = None):
+    def __init__(self, root: str, size: int, filterNum: int, balanceNum: int, transform: Any = None):
         catPhotos = dict()
 
         for dirName in os.listdir(root):
@@ -29,8 +26,8 @@ class CatPhotoDatasetHelper:
         catIDs = [catId for catId in catPhotos]
         print(f"*** total number of cats: {len(catIDs)}")
         
-        # 过滤照片少于 10 张的猫猫
-        catWithEnoughPhotoIDs = list(filter(lambda catID: len(catPhotos[catID]) >= 10, catIDs))
+        # 过滤照片少于filterNum张的猫猫
+        catWithEnoughPhotoIDs = list(filter(lambda catID: len(catPhotos[catID]) >= filterNum, catIDs))
         catWithEnoughPhotoIDs.sort()
         print(f"*** number of cats with enough photos: {len(catWithEnoughPhotoIDs)}, other cats would be ignored")
         self.catIDs = catWithEnoughPhotoIDs
@@ -50,14 +47,34 @@ class CatPhotoDatasetHelper:
             subProcessBar = tqdm(total=numPhotos, leave=False, desc=catID)
 
             for i in range(0, numTrain):
-                img = Image.open(photos[i]).convert("RGB").resize((IMG_SIDE_LEN, IMG_SIDE_LEN))
-                imgData = np.array(img, dtype=np.float32).transpose((2, 0, 1)) / 255
+                # 等比放缩然后使用padding
+                srcImg = Image.open(photos[i]).convert("RGB")
+                ratio = size / max(srcImg.width, srcImg.height)
+                unpadSize = int(round(srcImg.width * ratio)), int(round(srcImg.height * ratio))
+                srcImg = srcImg.resize(unpadSize)
+                dw = (size - unpadSize[0]) / 2
+                dh = (size - unpadSize[1]) / 2
+                left = int(round(dw - 0.1))
+                top = int(round(dh - 0.1))
+                padImg = Image.new(mode="RGB", size=(size, size), color=(114, 114, 114))
+                padImg.paste(srcImg, box=(left, top))
+                imgData = np.array(padImg, dtype=np.float32).transpose((2, 0, 1)) / 255
                 trainData.append(Tensor(imgData))
                 subProcessBar.update(1)
             
             for i in range(numTrain, numPhotos):
-                img = Image.open(photos[i]).convert("RGB").resize((IMG_SIDE_LEN, IMG_SIDE_LEN))
-                imgData = np.array(img, dtype=np.float32).transpose((2, 0, 1)) / 255
+                # 等比放缩然后使用padding
+                srcImg = Image.open(photos[i]).convert("RGB")
+                ratio = size / max(srcImg.width, srcImg.height)
+                unpadSize = int(round(srcImg.width * ratio)), int(round(srcImg.height * ratio))
+                srcImg = srcImg.resize(unpadSize)
+                dw = (size - unpadSize[0]) / 2
+                dh = (size - unpadSize[1]) / 2
+                left = int(round(dw - 0.1))
+                top = int(round(dh - 0.1))
+                padImg = Image.new(mode="RGB", size=(size, size), color=(114, 114, 114))
+                padImg.paste(srcImg, box=(left, top))
+                imgData = np.array(padImg, dtype=np.float32).transpose((2, 0, 1)) / 255
                 testData.append(Tensor(imgData))
                 subProcessBar.update(1)
 
@@ -66,9 +83,9 @@ class CatPhotoDatasetHelper:
             catTrainData.append(trainData)
             catTestData.append(testData)
         
-        self.trainDataset = CatPhotoDataset(targetData=catTrainData, balanceNum=BALANCE_NUM, transform=transform)
+        self.trainDataset = CatPhotoDataset(targetData=catTrainData, balanceNum=balanceNum, transform=transform)
         # self.testDataset = CatPhotoDataset(targetData=catTestData)
-        self.testDataset = CatPhotoDataset(targetData=catTestData, balanceNum=int(BALANCE_NUM * 0.2))
+        self.testDataset = CatPhotoDataset(targetData=catTestData, balanceNum=int(balanceNum * 0.2))
 
 class CatPhotoDataset(Dataset):
     def __init__(self, targetData: List[List[Tensor]], balanceNum: int = 0, transform: Any = None):
