@@ -1,16 +1,22 @@
 from typing import Any
+from werkzeug.datastructures import FileStorage
 
-import torch
 from yolo_interface import yolov5m
-from model import ResNet
 from PIL import Image
 import numpy as np
+import onnxruntime
+from scipy.special import softmax
 from flask import Flask, request
+import os
 import json
+from base64 import b64encode
+from hashlib import sha256
 
 
-HOST_NAME="localhost"
+HOST_NAME="127.0.0.1"
 PORT=3456
+
+SECRET_KEY = "xxx"
 
 IMG_SIZE = 100
 FALLBACK_IMG_SIZE = 224
@@ -18,26 +24,18 @@ FALLBACK_IMG_SIZE = 224
 MAX_RET_NUM = 10 # 最多可以返回的猫猫个数
 
 print("==> loading models...")
+assert os.path.isdir("export"), "*** export directory not found! you should export the training checkpoint to ONNX model."
 
 cropModel = yolov5m()
 
-catModel = ResNet()
-checkpoint = torch.load("cat.pth", map_location="cpu")
-print(f"*** cat model at epoch {checkpoint['epoch'] + 1}, ACC: {checkpoint['ACC'] :.2f}%")
-catModel.load_state_dict(checkpoint["model"])
-catModel.eval()
-catModel = torch.jit.trace(catModel, torch.randn((1, 3, IMG_SIZE, IMG_SIZE)))
-catIDs = checkpoint["catIDs"]
+with open("export/cat.json", "r") as fp:
+    catIDs = json.load(fp)
+catModel = onnxruntime.InferenceSession("export/cat.onnx", providers=["CPUExecutionProvider"])
 
-fallbackModel = ResNet()
-checkpoint = torch.load("fallback.pth", map_location="cpu")
-print(f"*** fallback model at epoch {checkpoint['epoch'] + 1}, ACC: {checkpoint['ACC'] :.2f}%")
-fallbackModel.load_state_dict(checkpoint["model"])
-fallbackModel.eval()
-fallbackModel = torch.jit.trace(fallbackModel, torch.randn((1, 3, FALLBACK_IMG_SIZE, FALLBACK_IMG_SIZE)))
-fallbackIDs = checkpoint["catIDs"]
+with open("export/fallback.json", "r") as fp:
+    fallbackIDs = json.load(fp)
+fallbackModel = onnxruntime.InferenceSession("export/fallback.onnx", providers=["CPUExecutionProvider"])
 
-del checkpoint
 print("==> models are loaded.")
 
 app = Flask(__name__)
@@ -58,18 +56,26 @@ def wrapErrorRetVal(message: str) -> str:
         'data': None
     })
 
+def checkSignature(photo: FileStorage, signature: str) -> bool:
+    photoBase64 = b64encode(photo.read()).decode()
+    photo.seek(0) # 重置读取位置，避免影响后续操作
+    signatureData = (photoBase64 + SECRET_KEY).encode()
+    return signature == sha256(signatureData).hexdigest()
+
 @app.route("/recognizeCatPhoto", methods=["POST"])
-@torch.no_grad()
 def recognizeCatPhoto():
     try:
         photo = request.files['photo']
+        signature = request.form['signature']
+        if not checkSignature(photo, signature=signature):
+            return wrapErrorRetVal("fail signature check.")
+        
         srcImg = Image.open(photo).convert("RGB")
         # 使用 YOLOv5 进行目标检测，结果为[{xmin, ymin, xmax, ymax, confidence, class, name}]格式
         results = cropModel(srcImg).pandas().xyxy[0].to_dict('records')
         # 过滤非cat目标
         catResults = list(filter(lambda target: target['name'] == 'cat', results))
-        numCats = len(catResults)
-        if numCats == 1:
+        if len(catResults) == 1:
             # 裁剪出cat
             catResult = catResults[0]
             cropBox = catResult['xmin'], catResult['ymin'], catResult['xmax'], catResult['ymax']
@@ -86,7 +92,7 @@ def recognizeCatPhoto():
             padImg.paste(srcImg, box=(left, top))
             # 输入到cat模型
             imgData = np.array(padImg, dtype=np.float32).transpose((2, 0, 1)) / 255
-            probs = torch.softmax(catModel(torch.Tensor(imgData))[0], dim=0).tolist()
+            probs = softmax(catModel.run(["prob"], {"photo": imgData[np.newaxis, :]})[0][0], axis=0).tolist()
             # 按概率排序
             catIDWithProb = sorted([dict(catID=catIDs[i], prob=probs[i]) for i in range(len(catIDs))], key=lambda item: item['prob'], reverse=True)
         else:
@@ -103,12 +109,17 @@ def recognizeCatPhoto():
             padImg.paste(srcImg, box=(left, top))
             # 输入到fallback模型
             imgData = np.array(padImg, dtype=np.float32).transpose((2, 0, 1)) / 255
-            probs = torch.softmax(fallbackModel(torch.Tensor(imgData))[0], dim=0).tolist()
+            probs = softmax(fallbackModel.run(["prob"], {"photo": imgData[np.newaxis, :]})[0][0], axis=0).tolist()
             # 按概率排序
             catIDWithProb = sorted([dict(catID=fallbackIDs[i], prob=probs[i]) for i in range(len(fallbackIDs))], key=lambda item: item['prob'], reverse=True)
         return wrapOKRetVal({
-            'numCats': numCats,
-            'result': catIDWithProb[:MAX_RET_NUM]
+            'catBoxes': [{
+                'xmin': item['xmin'],
+                'ymin': item['ymin'],
+                'xmax': item['xmax'],
+                'ymax': item['ymax']
+            } for item in catResults][:MAX_RET_NUM],
+            'recognizeResults': catIDWithProb[:MAX_RET_NUM]
         })
     except BaseException as err:
         return wrapErrorRetVal(str(err))

@@ -7,6 +7,8 @@ crop-photos/
 checkpoint/
 *.pt
 *.pth
+# 模型导出文件
+export/
 # Python 垃圾
 __pycache__/
 # MacOS的垃圾
