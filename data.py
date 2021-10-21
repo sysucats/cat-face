@@ -47,34 +47,16 @@ class CatPhotoDatasetHelper:
             subProcessBar = tqdm(total=numPhotos, leave=False, desc=catID)
 
             for i in range(0, numTrain):
-                # 等比放缩然后使用padding
-                srcImg = Image.open(photos[i]).convert("RGB")
-                ratio = size / max(srcImg.width, srcImg.height)
-                unpadSize = int(round(srcImg.width * ratio)), int(round(srcImg.height * ratio))
-                srcImg = srcImg.resize(unpadSize)
-                dw = (size - unpadSize[0]) / 2
-                dh = (size - unpadSize[1]) / 2
-                left = int(round(dw - 0.1))
-                top = int(round(dh - 0.1))
-                padImg = Image.new(mode="RGB", size=(size, size), color=(114, 114, 114))
-                padImg.paste(srcImg, box=(left, top))
-                imgData = np.array(padImg, dtype=np.float32).transpose((2, 0, 1)) / 255
+                # 直接resize到正方形
+                srcImg = Image.open(photos[i]).convert("RGB").resize((size, size))
+                imgData = np.array(srcImg, dtype=np.float32).transpose((2, 0, 1)) / 255
                 trainData.append(Tensor(imgData))
                 subProcessBar.update(1)
             
             for i in range(numTrain, numPhotos):
-                # 等比放缩然后使用padding
-                srcImg = Image.open(photos[i]).convert("RGB")
-                ratio = size / max(srcImg.width, srcImg.height)
-                unpadSize = int(round(srcImg.width * ratio)), int(round(srcImg.height * ratio))
-                srcImg = srcImg.resize(unpadSize)
-                dw = (size - unpadSize[0]) / 2
-                dh = (size - unpadSize[1]) / 2
-                left = int(round(dw - 0.1))
-                top = int(round(dh - 0.1))
-                padImg = Image.new(mode="RGB", size=(size, size), color=(114, 114, 114))
-                padImg.paste(srcImg, box=(left, top))
-                imgData = np.array(padImg, dtype=np.float32).transpose((2, 0, 1)) / 255
+                # 直接resize到正方形
+                srcImg = Image.open(photos[i]).convert("RGB").resize((size, size))
+                imgData = np.array(srcImg, dtype=np.float32).transpose((2, 0, 1)) / 255
                 testData.append(Tensor(imgData))
                 subProcessBar.update(1)
 

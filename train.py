@@ -27,11 +27,11 @@ def main():
     print("==> preparing data...")
 
     transform = transforms.Compose([
-        transforms.RandomCrop(args.size, padding=args.size // 8, fill=114), # 四周填充1/8大小后再随机裁剪为args.sizexargs.size
+        transforms.ColorJitter(brightness=0.1, contrast=0.1, saturation=0.1), # 亮度、对比度、饱和度均在0.9~1.1间随机变化
         transforms.RandomHorizontalFlip(p=0.5), # 以0.5的概率发生水平翻转
         transforms.RandomVerticalFlip(p=0.5), # 以0.5的概率发生垂直翻转
-        transforms.RandomRotation(degrees=15, fill=114), # 随机旋转-15~15度
-        transforms.ColorJitter(brightness=0.1, contrast=0.1, saturation=0.1), # 亮度、对比度、饱和度均在0.9~1.1间随机变化
+        transforms.RandomCrop(args.size, padding=args.size // 8, fill=0), # 四周填充1/8大小后再随机裁剪为args.sizexargs.size
+        transforms.RandomRotation(degrees=15, fill=0), # 随机旋转-15~15度
     ])
 
     dataHelper = CatPhotoDatasetHelper(root=args.data, size=args.size, filterNum=args.filter, balanceNum=args.balance, transform=transform)

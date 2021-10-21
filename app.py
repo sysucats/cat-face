@@ -21,7 +21,8 @@ SECRET_KEY = "xxx"
 IMG_SIZE = 100
 FALLBACK_IMG_SIZE = 224
 
-MAX_RET_NUM = 10 # 最多可以返回的猫猫个数
+CAT_BOX_MAX_RET_NUM = 5 # 最多可以返回的猫猫框个数
+RECOGNIZE_MAX_RET_NUM = 10 # 最多可以返回的猫猫识别结果个数
 
 print("==> loading models...")
 assert os.path.isdir("export"), "*** export directory not found! you should export the training checkpoint to ONNX model."
@@ -75,40 +76,22 @@ def recognizeCatPhoto():
         results = cropModel(srcImg).pandas().xyxy[0].to_dict('records')
         # 过滤非cat目标
         catResults = list(filter(lambda target: target['name'] == 'cat', results))
-        if len(catResults) == 1:
+        if len(catResults) >= 1:
             # 裁剪出cat
             catResult = catResults[0]
             cropBox = catResult['xmin'], catResult['ymin'], catResult['xmax'], catResult['ymax']
-            srcImg = srcImg.crop(cropBox)
-            # 进行等比缩放+padding
-            ratio = IMG_SIZE / max(srcImg.width, srcImg.height)
-            unpadSize = int(round(srcImg.width * ratio)), int(round(srcImg.height * ratio))
-            srcImg = srcImg.resize(unpadSize)
-            dw = (IMG_SIZE - unpadSize[0]) / 2
-            dh = (IMG_SIZE - unpadSize[1]) / 2
-            left = int(round(dw - 0.1))
-            top = int(round(dh - 0.1))
-            padImg = Image.new(mode="RGB", size=(IMG_SIZE, IMG_SIZE), color=(114, 114, 114))
-            padImg.paste(srcImg, box=(left, top))
+            # 裁剪后直接resize到正方形
+            srcImg = srcImg.crop(cropBox).resize((IMG_SIZE, IMG_SIZE))
             # 输入到cat模型
-            imgData = np.array(padImg, dtype=np.float32).transpose((2, 0, 1)) / 255
+            imgData = np.array(srcImg, dtype=np.float32).transpose((2, 0, 1)) / 255
             probs = softmax(catModel.run(["prob"], {"photo": imgData[np.newaxis, :]})[0][0], axis=0).tolist()
             # 按概率排序
             catIDWithProb = sorted([dict(catID=catIDs[i], prob=probs[i]) for i in range(len(catIDs))], key=lambda item: item['prob'], reverse=True)
         else:
-            # 没有检测到cat或有多个cat
-            # 进行等比缩放+padding
-            ratio = FALLBACK_IMG_SIZE / max(srcImg.width, srcImg.height)
-            unpadSize = int(round(srcImg.width * ratio)), int(round(srcImg.height * ratio))
-            srcImg = srcImg.resize(unpadSize)
-            dw = (FALLBACK_IMG_SIZE - unpadSize[0]) / 2
-            dh = (FALLBACK_IMG_SIZE - unpadSize[1]) / 2
-            left = int(round(dw - 0.1))
-            top = int(round(dh - 0.1))
-            padImg = Image.new(mode="RGB", size=(FALLBACK_IMG_SIZE, FALLBACK_IMG_SIZE), color=(114, 114, 114))
-            padImg.paste(srcImg, box=(left, top))
-            # 输入到fallback模型
-            imgData = np.array(padImg, dtype=np.float32).transpose((2, 0, 1)) / 255
+            # 没有检测到cat
+            # 整张图片直接resize到正方形
+            srcImg = srcImg.resize((FALLBACK_IMG_SIZE, FALLBACK_IMG_SIZE))
+            imgData = np.array(srcImg, dtype=np.float32).transpose((2, 0, 1)) / 255
             probs = softmax(fallbackModel.run(["prob"], {"photo": imgData[np.newaxis, :]})[0][0], axis=0).tolist()
             # 按概率排序
             catIDWithProb = sorted([dict(catID=fallbackIDs[i], prob=probs[i]) for i in range(len(fallbackIDs))], key=lambda item: item['prob'], reverse=True)
@@ -118,8 +101,8 @@ def recognizeCatPhoto():
                 'ymin': item['ymin'],
                 'xmax': item['xmax'],
                 'ymax': item['ymax']
-            } for item in catResults][:MAX_RET_NUM],
-            'recognizeResults': catIDWithProb[:MAX_RET_NUM]
+            } for item in catResults][:CAT_BOX_MAX_RET_NUM],
+            'recognizeResults': catIDWithProb[:RECOGNIZE_MAX_RET_NUM]
         })
     except BaseException as err:
         return wrapErrorRetVal(str(err))
