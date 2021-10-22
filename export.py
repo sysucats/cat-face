@@ -8,7 +8,7 @@ import json
 def main():
     parser = argparse.ArgumentParser(description="Export cat recognization training checkpoint to onnx model and json file.")
     parser.add_argument("--checkpoint", default="cat.pth", type=str, help="path of traning checkpoint file")
-    parser.add_argument("--size", default=100, type=int, help="image size")
+    parser.add_argument("--size", default=128, type=int, help="image size")
     args = parser.parse_args()
 
     print("==> loading checkpoint...")
