@@ -9,6 +9,7 @@ from scipy.special import softmax
 from flask import Flask, request
 import os
 import json
+import time
 from base64 import b64encode
 from hashlib import sha256
 
@@ -17,6 +18,7 @@ HOST_NAME="127.0.0.1"
 PORT=3456
 
 SECRET_KEY = "xxx"
+TOLERANT_TIME_ERROR = 30 # 可以容忍的时间戳误差(s)
 
 IMG_SIZE = 128
 FALLBACK_IMG_SIZE = 224
@@ -57,18 +59,21 @@ def wrapErrorRetVal(message: str) -> str:
         'data': None
     })
 
-def checkSignature(photo: FileStorage, signature: str) -> bool:
+def checkSignature(photo: FileStorage, timestamp: int, signature: str) -> bool:
+    if abs(timestamp - time.time()) > TOLERANT_TIME_ERROR:
+        return False
     photoBase64 = b64encode(photo.read()).decode()
     photo.seek(0) # 重置读取位置，避免影响后续操作
-    signatureData = (photoBase64 + SECRET_KEY).encode()
+    signatureData = (photoBase64 + str(timestamp) + SECRET_KEY).encode()
     return signature == sha256(signatureData).hexdigest()
 
 @app.route("/recognizeCatPhoto", methods=["POST"])
 def recognizeCatPhoto():
     try:
         photo = request.files['photo']
+        timestamp = int(request.form['timestamp'])
         signature = request.form['signature']
-        if not checkSignature(photo, signature=signature):
+        if not checkSignature(photo, timestamp=timestamp, signature=signature):
             return wrapErrorRetVal("fail signature check.")
         
         srcImg = Image.open(photo).convert("RGB")
