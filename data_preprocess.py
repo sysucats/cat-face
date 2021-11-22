@@ -13,8 +13,11 @@ def main():
     numPhotos = 0
     numSkippedPhotos = 0
 
-    if not os.path.isdir(DEST):
+    if not os.path.exists(DEST):
         os.mkdir(DEST)
+    else:
+        print('### destination path exists. please delete it first.')
+        exit(1)
 
     print("==> processing photos...")
     for dirName in tqdm(os.listdir(SRC), leave=False, desc="processing"):

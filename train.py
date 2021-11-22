@@ -13,7 +13,7 @@ def main():
     parser = argparse.ArgumentParser(description="Cat Face Recognization")
     parser.add_argument("--data", default="crop-photos", type=str, help="photo data directory")
     parser.add_argument("--size", default=128, type=int, help="image size")
-    parser.add_argument("--filter", default=5, type=int, help="cats whose photo number are less than this would be filtered")
+    parser.add_argument("--filter", default=10, type=int, help="cats whose photo number are less than this would be filtered")
     parser.add_argument("--balance", default=30, type=int, help="dataset class pseudo balance number")
     parser.add_argument("--lr", default=3e-4, type=float, help="learning rate")
     parser.add_argument("--batch", default=8, type=int, help="batch size")
