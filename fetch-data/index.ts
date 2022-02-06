@@ -16,7 +16,7 @@ const app = tcb.init({
 const db = app.database();
 
 async function main() {
-    process.stdout.write("\033[33mScaning local files... ");
+    process.stdout.write("\x1B[33mScaning local files... ");
     let localPhotos: {
         [file: string]: {
             catId: string,
@@ -36,14 +36,14 @@ async function main() {
             }
         }
     }
-    process.stdout.write(`${Object.keys(localPhotos).length} found.` + "\033[0m\n");
+    process.stdout.write(`${Object.keys(localPhotos).length} found.` + "\x1B[0m\n");
 
     let photoCount = (await db.collection("photo").count()).total;
     if (!photoCount) {
-        process.stdout.write("\033[31mFailed count photos.\033[0m\n");
+        process.stdout.write("\x1B[31mFailed count photos.\x1B[0m\n");
         process.exit(1);
     }
-    process.stdout.write("\033[35m" + `${photoCount} found in cloud database.` + "\033[0m\n");
+    process.stdout.write("\x1B[35m" + `${photoCount} found in cloud database.` + "\x1B[0m\n");
 
     const MAX_LIMIT = 100;
     let photoNumQuery = Math.ceil(photoCount / MAX_LIMIT);
@@ -59,11 +59,11 @@ async function main() {
 
             let catId = photo.cat_id;
             let cloudPath = photo.photo_compressed;// photo.photo_compressed || photo.photo_id;
-            process.stdout.write("cat: \033[35m" + catId + "\033[0m ");
-            process.stdout.write("photo cloud path: \033[34m" + cloudPath + "\033[0m ");
+            process.stdout.write("cat: \x1B[35m" + catId + "\x1B[0m ");
+            process.stdout.write("photo cloud path: \x1B[34m" + cloudPath + "\x1B[0m ");
 
             if (!cloudPath) {
-                process.stdout.write("\033[31mskipped for unavailable cloud path.\033[0m\n");
+                process.stdout.write("\x1B[31mskipped for unavailable cloud path.\x1B[0m\n");
                 continue;
             }
 
@@ -81,19 +81,19 @@ async function main() {
                         tempFilePath: localPath
                     });
                     numDownload++;
-                    process.stdout.write("\033[32mdownloaded to " + localPath + ".\033[0m\n");
+                    process.stdout.write("\x1B[32mdownloaded to " + localPath + ".\x1B[0m\n");
                 } catch (err) {
                     const e = <tcb.IErrorInfo>err;
-                    process.stdout.write("\033[31mfailed download, code: " + e.code + ", message: " + e.message + ".\033[0m\n");
+                    process.stdout.write("\x1B[31mfailed download, code: " + e.code + ", message: " + e.message + ".\x1B[0m\n");
                 }
             } else {
                 localPhotos[fileName]!.cloudStatusCheck = true;
-                process.stdout.write("\033[32malready downloaded at " + localPath + ".\033[0m\n");
+                process.stdout.write("\x1B[32malready downloaded at " + localPath + ".\x1B[0m\n");
             }
         }
     }
 
-    process.stdout.write("\033[33mCleaning...\033[0m\n");
+    process.stdout.write("\x1B[33mCleaning...\x1B[0m\n");
     let numDelete = 0;
     let numCatDelete = 0;
     for (let file in localPhotos) {
@@ -111,7 +111,7 @@ async function main() {
         }
     }
 
-    process.stdout.write("\033[35m" + `Done. ${numDownload} photos downloaded, ${numDelete} photos deleted. (${numCatDelete} cats deleted for no photo exists anymore.)` + "\033[0m\n");
+    process.stdout.write("\x1B[35m" + `Done. ${numDownload} photos downloaded, ${numDelete} photos deleted. (${numCatDelete} cats deleted for no photo exists anymore.)` + "\x1B[0m\n");
 }
 
 main();
