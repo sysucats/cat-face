@@ -22,8 +22,8 @@
 4. 返回仓库根目录，执行`pip install -r requirements.txt`安装依赖。（需要Python>=3.6。你也可以使用`conda`。）
 5. 执行`bash prepare_yolo.sh`拉取YOLOv5目标检测模型所需的代码和数据。
 6. 执行`python3 data_preprocess.py`，脚本将使用YOLOv5从fetch-data拉取的图片中识别出猫猫并截取到crop-photos目录。
-7. 运行train.py，训练一个识别猫猫图片的模型，并把训练输出checkpoint/ckpt.pth移动到当前目录下命名为cat.pth。同样，训练一个全图识别的模型（这个模型将在YOLO无法检测到猫猫时使用），把训练输出checkpoint/ckpt.pth移动到当前目录下命名为fallback.pth。（程序参数可以通过`python trian.py --help`获取帮助。）
-8. 运行export.py，将cat.pth和fallback.pth分别导出成ONNX模型。对应的文件会放在export目录下。（程序参数可以通过`python export.py --help`获取帮助。）
+7. 运行train.py，训练一个识别猫猫图片的模型，并把训练输出checkpoint/ckpt.pth移动到当前目录下命名为cat.pth。同样，训练一个全图识别的模型（你应当指定参数`--data fetch-data/photos`，这个模型将在YOLOv5无法检测到猫猫时使用），把训练输出checkpoint/ckpt.pth移动到当前目录下命名为fallback.pth。（程序参数可以通过`python3 trian.py --help`获取帮助。）
+8. 运行export.py，将cat.pth和fallback.pth分别导出成ONNX模型。对应的文件会放在export目录下。（程序参数可以通过`python3 export.py --help`获取帮助。）
 9. 在仓库根目录中创建.env文件，填写服务运行参数主机名`HOST_NAME`、端口`PORT`和接口密钥`SECRET_KEY`。示例：
     ```bash
     HOST_NAME=127.0.0.1
