@@ -16,3 +16,5 @@ __pycache__/
 # 日志文件
 *.log
 *log*.txt
+# 环境配置
+.env

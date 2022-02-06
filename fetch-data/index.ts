@@ -1,16 +1,28 @@
-const tcb = require("@cloudbase/node-sdk");
-const fs = require("fs");
+import fs from 'fs';
+import tcb from '@cloudbase/node-sdk';
+import dotenv from 'dotenv';
+
+dotenv.config();
+
+const SECRET_ID = process.env.SECRET_ID;
+const SECRET_KEY = process.env.SECRET_KEY;
+const ENV = process.env.ENV;
 
 const app = tcb.init({
-    secretId: "xxx",
-    secretKey: "xxx",
-    env: "xxx"
+    secretId: SECRET_ID,
+    secretKey: SECRET_KEY,
+    env: ENV
 });
 const db = app.database();
 
 async function main() {
     process.stdout.write("\033[33mScaning local files... ");
-    let localPhotos = {};
+    let localPhotos: {
+        [file: string]: {
+            catId: string,
+            cloudStatusCheck: boolean
+        } | undefined
+    } = {};
     if (!fs.existsSync("./photos")) {
         fs.mkdirSync("./photos");
     } else {
@@ -27,6 +39,10 @@ async function main() {
     process.stdout.write(`${Object.keys(localPhotos).length} found.` + "\033[0m\n");
 
     let photoCount = (await db.collection("photo").count()).total;
+    if (!photoCount) {
+        process.stdout.write("\033[31mFailed count photos.\033[0m\n");
+        process.exit(1);
+    }
     process.stdout.write("\033[35m" + `${photoCount} found in cloud database.` + "\033[0m\n");
 
     const MAX_LIMIT = 100;
@@ -67,10 +83,11 @@ async function main() {
                     numDownload++;
                     process.stdout.write("\033[32mdownloaded to " + localPath + ".\033[0m\n");
                 } catch (err) {
-                    process.stdout.write("\033[31mfailed download, code: " + err.code + ", message: " + err.message + ".\033[0m\n");
+                    const e = <tcb.IErrorInfo>err;
+                    process.stdout.write("\033[31mfailed download, code: " + e.code + ", message: " + e.message + ".\033[0m\n");
                 }
             } else {
-                localPhotos[fileName].cloudStatusCheck = true;
+                localPhotos[fileName]!.cloudStatusCheck = true;
                 process.stdout.write("\033[32malready downloaded at " + localPath + ".\033[0m\n");
             }
         }
@@ -80,7 +97,7 @@ async function main() {
     let numDelete = 0;
     let numCatDelete = 0;
     for (let file in localPhotos) {
-        let photo = localPhotos[file];
+        let photo = localPhotos[file]!;
         if (photo.cloudStatusCheck) continue;
 
         let dir = "./photos/" + photo.catId;

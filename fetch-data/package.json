@@ -1,5 +1,18 @@
 {
+  "name": "cat-face-fetch-data",
+  "version": "0.1.0",
+  "description": "",
+  "private": true,
+  "main": "dist/index.js",
+  "scripts": {
+    "start": "ts-node ./index.ts"
+  },
   "dependencies": {
-    "@cloudbase/node-sdk": "^2.7.1"
+    "@cloudbase/node-sdk": "^2.7.1",
+    "dotenv": "^16.0.0"
+  },
+  "devDependencies": {
+    "ts-node": "^10.4.0",
+    "typescript": "^4.5.5"
   }
 }

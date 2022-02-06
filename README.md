@@ -11,11 +11,23 @@
 
 ## Quick Start
 
-1. NPM安装fetch-data文件夹中JS脚本的依赖。
-2. 使用Node.js运行fetch-data中的fetch.js，根据小程序数据库记录拉取小程序云存储中的图片。（记得填写`tcb.init`所需的信息。）
-3. PIP安装requirements.txt中的Python依赖。（需要Python>=3.6。）
-4. \[可选\]执行prepare_yolo.sh脚本准备YOLOv5目标检测模型所需的内容。（如在脚本运行上遇到问题，你也可以手动使用git拉取子模块的内容。剩余的下载步骤可以在下面运行时自动完成。）
-5. 运行data_preprocess.py程序，使用YOLOv5从fetch-data拉取的数据中识别出猫猫并截取到crop-photos文件夹。
-6. 多次运行train.py，训练一个识别猫猫图片的模型，并把训练输出checkpoint/ckpt.pth移动到当前目录下命名为cat.pth。同样，训练一个全图识别的模型（这个模型将在YOLO无法检测到猫猫时使用），把训练输出checkpoint/ckpt.pth移动到当前目录下命名为fallback.pth。（程序参数可以通过`python trian.py --help`获取帮助。）
-7. 两次运行export.py，将cat.pth和fallback.pth分别导出成ONNX模型。对应的文件会放在export目录下。（程序参数可以通过`python export.py --help`获取帮助。）
-8. 修改app.py中必要的常量。现在你可以通过运行app.py启动后端服务了。
+1. 进入fetch-data目录，执行`npm install`安装依赖。
+2. 在fetch-data目录创建.env文件，填写小程序云环境的`SECRET_ID`、`SECRET_KEY`和环境名称`ENV`。示例：
+    ```bash
+    SECRET_ID=abcd
+    SECRET_KEY=xyz
+    ENV=opq
+    ```
+3. 执行`npm start`，脚本将根据小程序数据库记录拉取小程序云存储中的图片。
+4. 返回仓库根目录，执行`pip install -r requirements.txt`安装依赖。（需要Python>=3.6。你也可以使用`conda`。）
+5. 执行`bash prepare_yolo.sh`拉取YOLOv5目标检测模型所需的代码和数据。
+6. 执行`python3 data_preprocess.py`，脚本将使用YOLOv5从fetch-data拉取的图片中识别出猫猫并截取到crop-photos目录。
+7. 运行train.py，训练一个识别猫猫图片的模型，并把训练输出checkpoint/ckpt.pth移动到当前目录下命名为cat.pth。同样，训练一个全图识别的模型（这个模型将在YOLO无法检测到猫猫时使用），把训练输出checkpoint/ckpt.pth移动到当前目录下命名为fallback.pth。（程序参数可以通过`python trian.py --help`获取帮助。）
+8. 运行export.py，将cat.pth和fallback.pth分别导出成ONNX模型。对应的文件会放在export目录下。（程序参数可以通过`python export.py --help`获取帮助。）
+9. 在仓库根目录中创建.env文件，填写服务运行参数主机名`HOST_NAME`、端口`PORT`和接口密钥`SECRET_KEY`。示例：
+    ```bash
+    HOST_NAME=127.0.0.1
+    PORT=3456
+    SECRET_KEY='keyboard cat'
+    ```
+10. 现在，执行`python3 app.py`，HTTP接口服务将被启动。🎉
