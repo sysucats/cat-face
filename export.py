@@ -7,14 +7,14 @@ import json
 
 def main():
     parser = argparse.ArgumentParser(description="Export cat recognization training checkpoint to onnx model and json file.")
-    parser.add_argument("--checkpoint", default="cat.pth", type=str, help="path of traning checkpoint file")
-    parser.add_argument("--size", default=128, type=int, help="image size")
+    parser.add_argument("--checkpoint", default="cat.pth", type=str, help="path of traning checkpoint file (default: cat.pth)")
+    parser.add_argument("--size", default=128, type=int, help="image size (default: 128)")
     args = parser.parse_args()
 
     print("==> loading checkpoint...")
     checkpoint = torch.load(args.checkpoint, map_location="cpu")
     catIDs = checkpoint["catIDs"]
-    print(f"==> checkpoint loaded. info: number of cats = {len(catIDs)}, model is trained for {checkpoint['epoch'] + 1} epoches, test ACC = {checkpoint['ACC'] :.2f}%")
+    print(f"==> checkpoint loaded. info: number of cats = {len(catIDs)}, model is trained for {checkpoint['epoch'] + 1} epoches, test ACC = {checkpoint['ACC'] :.6f}")
 
     print("==> building model...")
     model = ResNet(numTargets=len(catIDs))

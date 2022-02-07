@@ -10,13 +10,13 @@ from tqdm import tqdm
 
 def main():
     # 解析命令行参数
-    parser = argparse.ArgumentParser(description="Cat Face Recognization")
-    parser.add_argument("--data", default="crop-photos", type=str, help="photo data directory")
-    parser.add_argument("--size", default=128, type=int, help="image size")
-    parser.add_argument("--filter", default=10, type=int, help="cats whose photo number are less than this would be filtered")
-    parser.add_argument("--balance", default=30, type=int, help="dataset class pseudo balance number")
-    parser.add_argument("--lr", default=3e-4, type=float, help="learning rate")
-    parser.add_argument("--batch", default=8, type=int, help="batch size")
+    parser = argparse.ArgumentParser(description="Train a cat face recognization model.")
+    parser.add_argument("--data", default="crop-photos", type=str, help="photo data directory (default: crop-photos)")
+    parser.add_argument("--size", default=128, type=int, help="image size (default: 128)")
+    parser.add_argument("--filter", default=10, type=int, help="cats whose photo number are less than this would be filtered (default: 10)")
+    parser.add_argument("--lr", default=3e-4, type=float, help="learning rate (default: 3e-4)")
+    parser.add_argument("--batch", default=32, type=int, help="batch size (default: 32)")
+    parser.add_argument("--epoch", default=50, type=int, help="number of epoches to run (default: 50)")
     parser.add_argument("--resume", action="store_true", help="resume from checkpoint")
     args = parser.parse_args()
 
@@ -34,7 +34,7 @@ def main():
         transforms.RandomRotation(degrees=15, fill=0), # 随机旋转-15~15度
     ])
 
-    dataHelper = CatPhotoDatasetHelper(root=args.data, size=args.size, filterNum=args.filter, balanceNum=args.balance, transform=transform)
+    dataHelper = CatPhotoDatasetHelper(root=args.data, size=args.size, filterNum=args.filter, transform=transform)
 
     trainLoader = torch.utils.data.DataLoader(dataset=dataHelper.trainDataset, batch_size=args.batch, shuffle=True, num_workers=2)
     testLoader = torch.utils.data.DataLoader(dataset=dataHelper.testDataset, batch_size=args.batch, shuffle=False, num_workers=2)
@@ -58,63 +58,67 @@ def main():
         assert checkpoint["catIDs"] == dataHelper.catIDs, "### failed checking catIDs!"
 
     # 损失函数及优化器
-    lossFunc = nn.CrossEntropyLoss()
-    # optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=0.9, weight_decay=5e-4)
+    lossFunc = nn.CrossEntropyLoss(weight=torch.Tensor([dataHelper.catWeight[catID] for catID in dataHelper.catIDs])).to(device=device)
     optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=5e-4)
 
-    for epoch in range(startEpoch, startEpoch + 50):
+    for epoch in range(startEpoch, startEpoch + args.epoch):
         print(f"---------- epoch {epoch :>3d} ----------")
 
         # 在训练集上训练模型
         model.train()
-        trainLoss = 0.
-        trainNum = 0
-        trainCorrect = 0
-        for x, y in tqdm(trainLoader, leave=False, desc="training"):
-            x, y = x.to(device), y.to(device)
+        trainLossWeightSum = 0.
+        trainWeightSum = 0.
+        trainCorrectWeightSum = 0.
+        for imgs, catIdxs, weights in tqdm(trainLoader, leave=False, desc="training"):
+            imgs, catIdxs, weights = imgs.to(device), catIdxs.to(device), weights.to(device)
             optimizer.zero_grad()
-            out = model(x)
-            loss = lossFunc(out, y)
+            out = model(imgs)
+            loss = lossFunc(out, catIdxs)
             loss.backward()
             optimizer.step()
             # 统计损失值及正确率
-            trainLoss += loss.item()
+            trainLossWeightSum += (loss * weights.sum()).item()
             _, pred = out.max(dim=1)
-            trainNum += y.size(0)
-            trainCorrect += (pred == y).sum().item()
-        print(f"train mean loss: {trainLoss / trainNum :.4g}, accuracy: {100 * trainCorrect / trainNum :.2f}%")
+            trainWeightSum += weights.sum().item()
+            trainCorrectWeightSum += ((pred == catIdxs) * weights).sum().item()
+        
+        trainMeanLoss = trainLossWeightSum / trainWeightSum
+        trainMeanACC = trainCorrectWeightSum / trainWeightSum
+        print(f"train mean loss: {trainMeanLoss:.6f}, accuracy: {trainMeanACC:.6f}")
         
         # 统计在测试集上的表现
         model.eval()
-        testLoss = 0.
-        testNum = 0
-        testCorrect = 0
+        testLossWeightSum = 0.
+        testWeightSum = 0.
+        testCorrectWeightSum = 0.
         with torch.no_grad():
-            for x, y in tqdm(testLoader, leave=False, desc="testing"):
-                x, y = x.to(device), y.to(device)
-                out = model(x)
-                loss = lossFunc(out, y)
+            for imgs, catIdxs, weights in tqdm(testLoader, leave=False, desc="testing"):
+                imgs, catIdxs, weights = imgs.to(device), catIdxs.to(device), weights.to(device)
+                out = model(imgs)
+                loss = lossFunc(out, catIdxs)
                 # 统计损失值及正确率
-                testLoss += loss.item()
+                testLossWeightSum += (loss * weights.sum()).item()
                 _, pred = out.max(dim=1)
-                testNum += y.size(0)
-                testCorrect += (pred == y).sum().item()
-        print(f"test mean loss: {testLoss / testNum :.4g}, accuracy: {100 * testCorrect / testNum :.2f}%")
+                testWeightSum += weights.sum().item()
+                testCorrectWeightSum += ((pred == catIdxs) * weights).sum().item()
+        
+        testMeanLoss = testLossWeightSum / testWeightSum
+        testMeanACC = testCorrectWeightSum / testWeightSum
+        print(f"test mean loss: {testMeanLoss:.6f}, accuracy: {testMeanACC:.6f}")
         
         # 检查测试集准确率是否得到提高，提高则保存检查点
-        ACC = 100 * testCorrect / testNum
-        if ACC > bestACC:
+        if testMeanACC > bestACC:
             print("==> saving checkpoint...")
             state = {
                 "model": model.state_dict(),
-                "ACC": ACC,
+                "ACC": testMeanACC,
                 "epoch": epoch,
                 "catIDs": dataHelper.catIDs
             }
             if not os.path.isdir("checkpoint"):
                 os.mkdir("checkpoint")
             torch.save(state, "checkpoint/ckpt.pth")
-            bestACC = ACC
+            bestACC = testMeanACC
 
 if __name__ == "__main__":
     main() 
