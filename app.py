@@ -84,7 +84,7 @@ def main():
             # 过滤非cat目标
             catResults = list(filter(lambda target: target['name'] == 'cat', results))
             if len(catResults) >= 1:
-                catIdx = request.form['catIdx'] if 'catIdx' in request.form and request.form['catIdx'] < len(catResults) else 0
+                catIdx = int(request.form['catIdx']) if 'catIdx' in request.form and int(request.form['catIdx']) < len(catResults) else 0
                 # 裁剪出(指定的)cat
                 catResult = catResults[catIdx]
                 cropBox = catResult['xmin'], catResult['ymin'], catResult['xmax'], catResult['ymax']
