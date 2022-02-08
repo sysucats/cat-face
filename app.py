@@ -14,19 +14,19 @@ from base64 import b64encode
 from hashlib import sha256
 
 def main():
-    load_dotenv()
+    load_dotenv(override=True)
 
     HOST_NAME = os.environ['HOST_NAME']
-    PORT= os.environ['PORT']
+    PORT = int(os.environ['PORT'])
 
     SECRET_KEY = os.environ['SECRET_KEY']
-    TOLERANT_TIME_ERROR = 30 # 可以容忍的时间戳误差(s)
+    TOLERANT_TIME_ERROR = int(os.environ['TOLERANT_TIME_ERROR']) # 可以容忍的时间戳误差(s)
 
-    IMG_SIZE = 128
-    FALLBACK_IMG_SIZE = 224
+    IMG_SIZE = int(os.environ['IMG_SIZE'])
+    FALLBACK_IMG_SIZE = int(os.environ['FALLBACK_IMG_SIZE'])
 
-    CAT_BOX_MAX_RET_NUM = 5 # 最多可以返回的猫猫框个数
-    RECOGNIZE_MAX_RET_NUM = 20 # 最多可以返回的猫猫识别结果个数
+    CAT_BOX_MAX_RET_NUM = int(os.environ['CAT_BOX_MAX_RET_NUM']) # 最多可以返回的猫猫框个数
+    RECOGNIZE_MAX_RET_NUM = int(os.environ['RECOGNIZE_MAX_RET_NUM']) # 最多可以返回的猫猫识别结果个数
 
     print("==> loading models...")
     assert os.path.isdir("export"), "*** export directory not found! you should export the training checkpoint to ONNX model."

@@ -24,10 +24,18 @@
 6. 执行`python3 data_preprocess.py`，脚本将使用YOLOv5从fetch-data拉取的图片中识别出猫猫并截取到crop-photos目录。
 7. 运行train.py，训练一个识别猫猫图片的模型，并把训练输出checkpoint/ckpt.pth移动到当前目录下命名为cat.pth。同样，训练一个全图识别的模型（你应当指定参数`--data fetch-data/photos`，这个模型将在YOLOv5无法检测到猫猫时使用），把训练输出checkpoint/ckpt.pth移动到当前目录下命名为fallback.pth。（程序参数可以通过`python3 trian.py --help`获取帮助。）
 8. 运行export.py，将cat.pth和fallback.pth分别导出成ONNX模型。对应的文件会放在export目录下。（程序参数可以通过`python3 export.py --help`获取帮助。）
-9. 在仓库根目录中创建.env文件，填写服务运行参数主机名`HOST_NAME`、端口`PORT`和接口密钥`SECRET_KEY`。示例：
+9. 在仓库根目录中创建.env文件，填写服务运行参数。示例：
     ```bash
-    HOST_NAME=127.0.0.1
-    PORT=3456
-    SECRET_KEY='keyboard cat'
+    HOST_NAME=127.0.0.1 # 主机名
+    PORT=3456 # HTTP服务端口
+
+    SECRET_KEY='keyboard cat' # 接口密钥（用于哈希签名认证）
+    TOLERANT_TIME_ERROR=60 # 调用接口时附带的时间戳参数与服务器时间之间的最大允许误差（单位：s）
+
+    IMG_SIZE=128 # 猫猫识别模型的输入图像大小
+    FALLBACK_IMG_SIZE=224 # 无法检测到猫猫时使用的全图识别模型的输入图像大小
+
+    CAT_BOX_MAX_RET_NUM=5 # 接口返回的图片中检测到的猫猫的最大个数
+    RECOGNIZE_MAX_RET_NUM=20 # 接口返回的猫猫识别结果候选列表的最大个数
     ```
 10. 现在，执行`python3 app.py`，HTTP接口服务将被启动。🎉
