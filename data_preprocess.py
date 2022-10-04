@@ -1,51 +1,53 @@
 import os
 import shutil
-from yolo_interface import yolov5m
+import torch
 from tqdm import tqdm
 from PIL import Image
 
-SRC = 'fetch-data/photos'
-DEST = 'crop-photos'
+SRC = 'data/photos'
+DEST = 'data/crop_photos'
 
-def main():
-    print("==> loading YOLOv5 model...")
-    model = yolov5m()
+if __name__ == '__main__':
+    print('loading YOLOv5 model...')
+    model = torch.hub.load('yolov5', 'custom', 'yolov5/yolov5m.pt', source='local')
 
-    numPhotos = 0
-    numSkippedPhotos = 0
+    num_photos = 0
+    num_skipped_photos = 0
 
     if os.path.exists(DEST):
         shutil.rmtree(DEST)
     os.mkdir(DEST)
 
-    print("==> processing photos...")
-    for dirName in tqdm(os.listdir(SRC), leave=False, desc="processing"):
-        srcPath = os.path.join(SRC, dirName)
-        if not os.path.isdir(srcPath):
+    print('processing photos...')
+    for dir_name in tqdm(os.listdir(SRC), leave=False, desc='processing'):
+        src_path = os.path.join(SRC, dir_name)
+        if not os.path.isdir(src_path):
             continue
 
-        destPath = os.path.join(DEST, dirName)
-        os.mkdir(destPath)
+        dest_path = os.path.join(DEST, dir_name)
+        os.mkdir(dest_path)
         
-        for fileName in tqdm(os.listdir(srcPath), leave=False, desc=dirName):
-            numPhotos += 1
+        for file_name in tqdm(os.listdir(src_path), leave=False, desc=dir_name):
+            num_photos += 1
 
-            srcFilePath = os.path.join(srcPath, fileName)
-            destFilePath = os.path.join(destPath, fileName)
+            src_file_path = os.path.join(src_path, file_name)
+            dest_file_path = os.path.join(dest_path, file_name)
             # 使用 YOLOv5 进行目标检测，结果为[{xmin, ymin, xmax, ymax, confidence, class, name}]格式
-            results = model(srcFilePath).pandas().xyxy[0].to_dict('records')
+            try:
+                results = model(src_file_path).pandas().xyxy[0].to_dict('records')
+            except OSError as err:
+                # 发现有的图片有问题，会导致 PIL 抛出 OSError: image file is truncated
+                num_skipped_photos += 1
+                continue
             # 过滤非cat目标
-            catResults = list(filter(lambda target: target['name'] == 'cat', results))
+            cat_results = list(filter(lambda target: target['name'] == 'cat', results))
             # 跳过图片内检测不到cat或有多个cat的图片
-            if len(catResults) != 1:
-                numSkippedPhotos += 1
+            if len(cat_results) != 1:
+                num_skipped_photos += 1
                 continue
             # 裁剪出cat
-            catResult = catResults[0]
-            cropBox = catResult['xmin'], catResult['ymin'], catResult['xmax'], catResult['ymax']
-            Image.open(srcFilePath).convert('RGB').crop(cropBox).save(destFilePath, format='JPEG')
+            cat_result = cat_results[0]
+            crop_box = cat_result['xmin'], cat_result['ymin'], cat_result['xmax'], cat_result['ymax']
+            Image.open(src_file_path).convert('RGB').crop(crop_box).save(dest_file_path, format='JPEG')
     
-    print(f"==> done. {numPhotos - numSkippedPhotos} photos cropped, {numSkippedPhotos} photos skipped.")
-
-if __name__ == "__main__":
-    main()
+    print(f'done. {num_photos - num_skipped_photos} photos processed, {num_skipped_photos} photos skipped.')
