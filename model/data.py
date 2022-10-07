@@ -36,9 +36,15 @@ class CatPhotoDataset(Dataset):
         class_idx = index // self.balance_num
 
         class_data = self.data[class_idx].as_py()
-        img_path = random.choice(class_data)
-
-        img = Image.open(img_path).convert('RGB').resize((self.size, self.size))
+        
+        # TODO:数据库里有打不开的错误图片。。暂时这样打个补丁吧
+        while True:
+            try:
+                img_path = random.choice(class_data)
+                img = Image.open(img_path).convert('RGB').resize((self.size, self.size))
+                break
+            except:
+                continue
         img = np.array(img, dtype=np.float32).transpose((2, 0, 1)) / 255
         img = Tensor(img)
 
