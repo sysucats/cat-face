@@ -48,4 +48,4 @@
     CAT_BOX_MAX_RET_NUM=5 # 接口返回的图片中检测到的猫猫的最大个数
     RECOGNIZE_MAX_RET_NUM=20 # 接口返回的猫猫识别结果候选列表的最大个数
     ```
-6. 现在，执行`python3 app.py`，HTTP接口服务将被启动。🎉（你可以自行使用gunicorn等框架完成更规范的部署。）
+6. 现在，执行`python3 app.py`，HTTP接口服务将被启动。🎉（你可以自行使用gunicorn等框架完成更规范的部署，也可以只使用pm2进行简单管理。）
