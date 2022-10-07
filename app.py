@@ -94,7 +94,7 @@ def recognize_cat_photo():
 
             # 输入到cat模型
             img = np.array(src_img, dtype=np.float32).transpose((2, 0, 1)) / 255
-            scores = cat_model.run(cat_model.get_outputs(), {cat_model.get_inputs()[0]: img[np.newaxis, :]})[0][0].tolist()
+            scores = cat_model.run([node.name for node in cat_model.get_outputs()], {cat_model.get_inputs()[0].name: img[np.newaxis, :]})[0][0].tolist()
 
             # 按概率排序
             cat_id_with_score = sorted([dict(catID=cat_ids[i], score=scores[i]) for i in range(len(cat_ids))], key=lambda item: item['score'], reverse=True)
@@ -104,7 +104,7 @@ def recognize_cat_photo():
             src_img = src_img.resize((FALLBACK_IMG_SIZE, FALLBACK_IMG_SIZE))
 
             img = np.array(src_img, dtype=np.float32).transpose((2, 0, 1)) / 255
-            scores = fallback_model.run(fallback_model.get_outputs(), {fallback_model.get_inputs[0]: img[np.newaxis, :]})[0][0].tolist()
+            scores = fallback_model.run([node.name for node in fallback_model.get_outputs()], {fallback_model.get_inputs()[0].name: img[np.newaxis, :]})[0][0].tolist()
 
             # 按概率排序
             cat_id_with_score = sorted([dict(catID=fallback_ids[i], score=scores[i]) for i in range(len(fallback_ids))], key=lambda item: item['score'], reverse=True)
