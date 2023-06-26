@@ -17,3 +17,4 @@ __pycache__/
 *log*.txt
 # 环境配置
 .env
+config.ts
