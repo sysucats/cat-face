@@ -1,5 +1,4 @@
 import fs from 'fs';
-import tcb from '@cloudbase/node-sdk';
 // import dotenv from 'dotenv';
 import { Cloud } from "laf-client-sdk";
 import { stdlog, downloadCosPath, getCos } from './utils';
@@ -85,8 +84,7 @@ async function main() {
                     numDownload++;
                     stdlog(`, downloaded to ${localPath}\n`, "green");
                 } catch (err) {
-                    const e = <tcb.IErrorInfo>err;
-                    stdlog(`, failed download, code: ${e.code}, message: ${e.message}.\n`, "red");
+                    stdlog(`, failed download, message: ${err}.\n`, "red");
                 }
             } else {
                 localPhotos[fileName]!.cloudStatusCheck = true;
