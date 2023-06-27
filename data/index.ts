@@ -67,7 +67,7 @@ async function main() {
             stdlog(cloudPath, "blue");
 
             if (!cloudPath) {
-                stdlog("skipped for unavailable cloud path.\n", "red");
+                stdlog(", skipped for unavailable cloud path.\n", "red");
                 continue;
             }
 
