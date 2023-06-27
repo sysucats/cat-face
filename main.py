@@ -39,11 +39,10 @@ def main():
         devices=1 if device == 'gpu' else None, # GPU 避免多卡，有 bug
         logger=logger,
         callbacks=[checkpoint_callback],
-        max_epochs=args.epoch
+        max_epochs=args.epoch,
+        num_sanity_val_steps=0,
     )
     trainer.fit(model, datamodule=data_module)
-
-    print('exporting model...')
 
     if not os.path.exists('export/'):
         os.mkdir('export/')

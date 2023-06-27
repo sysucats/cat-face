@@ -78,7 +78,7 @@ async function main() {
                 fs.mkdirSync(localDir);
             }
             let localPath = localDir + "/" + fileName;
-            if (!fs.existsSync(localPath)) {
+            if (!fs.existsSync(localPath) || localPhotos[fileName] === undefined) {
                 try {
                     downloadCosPath(cos, cloudPath, localPath)
                     numDownload++;
@@ -102,7 +102,7 @@ async function main() {
 
         let dir = "./photos/" + photo.catId;
         let path = dir + "/" + file;
-        fs.rmSync(path);
+        fs.rmSync(path, {recursive: true});
         numDelete++;
 
         if (fs.readdirSync(dir).length === 0) {

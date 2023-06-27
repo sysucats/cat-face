@@ -18,3 +18,4 @@ __pycache__/
 # 环境配置
 .env
 config.ts
+.ipynb_checkpoints/
