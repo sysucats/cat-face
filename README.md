@@ -28,7 +28,7 @@
 2. 执行`pip install -r requirements.txt`安装依赖。（需要Python>=3.8。不建议使用特别新版本的 Python，可能有兼容性问题。）
 3. 执行`bash prepare_yolov5.sh`拉取YOLOv5目标检测模型所需的代码，然后下载并预处理模型数据。
 4. 将export文件夹从训练服务器中拷贝到部署服务器中。export文件夹中应包括四个文件：cat.onnx, cat.json, fallback.onnx, fallback.json。
-5. 在仓库根目录中创建.env文件，填写服务运行参数。示例：
+5. 在仓库根目录中创建`env`文件（不需要.号开头），填写服务运行参数。示例：
     ```bash
     HOST_NAME=127.0.0.1 # 主机名
     PORT=3456 # HTTP服务端口
