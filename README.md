@@ -9,6 +9,10 @@
 3. 网络服务器一台，用于部署识别服务。（需要自备web后端技能。）服务器不需要GPU。
 4. 已注册备案域名一个，获取SSL，用于小程序调用服务。
 
+## 手把手教程
+
+https://docs.qq.com/doc/DSHhmTkNNYUNYTkpH
+
 ## Quick Start
 
 ### 1. 训练模型
