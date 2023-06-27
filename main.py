@@ -14,7 +14,7 @@ def main():
     parser.add_argument("--data", default="data/crop_photos", type=str, help="photo data directory (default: data/crop_photos)")
     parser.add_argument("--size", default=128, type=int, help="image size (default: 128)")
     parser.add_argument("--filter", default=10, type=int, help="cats whose number of photos is less than this value will be filtered (default: 10)")
-    parser.add_argument("--balance", default=30, type=int, help="data sampling number of each cat in an epoch for balancing (default: 50)")
+    parser.add_argument("--balance", default=30, type=int, help="data sampling number of each cat in an epoch for balancing (default: 30)")
     parser.add_argument("--lr", default=3e-4, type=float, help="learning rate (default: 3e-4)")
     parser.add_argument("--batch", default=32, type=int, help="batch size (default: 32)")
     parser.add_argument("--epoch", default=150, type=int, help="number of epoches to run (default: 150)")

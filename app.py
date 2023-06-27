@@ -13,7 +13,7 @@ import time
 from base64 import b64encode
 from hashlib import sha256
 
-load_dotenv(override=True)
+load_dotenv("./env", override=True)
 
 HOST_NAME = os.environ['HOST_NAME']
 PORT = int(os.environ['PORT'])
@@ -69,6 +69,7 @@ def check_signature(photo: FileStorage, timestamp: int, signature: str) -> bool:
     return signature == sha256(signatureData).hexdigest()
 
 @app.route("/recognizeCatPhoto", methods=["POST"])
+@app.route("/recognizeCatPhoto/", methods=["POST"])
 def recognize_cat_photo():
     try:
         photo = request.files['photo']

@@ -95,4 +95,4 @@ class CatPhotoDataModule(LightningDataModule):
         return DataLoader(self.train_dataset, batch_size=self.hparams['batch_size'], shuffle=True, num_workers=4)
     
     def val_dataloader(self) -> DataLoader:
-        return DataLoader(self.val_dataset, batch_size=self.hparams['batch_size'], shuffle=True, num_workers=4)
+        return DataLoader(self.val_dataset, batch_size=self.hparams['batch_size'], shuffle=False, num_workers=4)

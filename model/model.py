@@ -43,7 +43,7 @@ class CatFaceModule(LightningModule):
 
         with torch.no_grad():
             # 每个类别分别计算准确率，以平衡地综合考虑每只猫的准确率
-            accuracy_per_class = torchmetrics.functional.accuracy(out, y, num_classes=self.hparams['num_classes'], average=None)
+            accuracy_per_class = torchmetrics.functional.accuracy(out, y, task="multiclass", num_classes=self.hparams['num_classes'], average=None)
             # 去掉batch中没有出现的类别，这些位置为nan
             nan_mask = accuracy_per_class.isnan()
             accuracy_per_class = accuracy_per_class.masked_fill(nan_mask, 0)
