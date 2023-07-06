@@ -54,24 +54,38 @@ export function getCos() {
 
 export function downloadCosPath(cos: COS, path: string, localPath: string) {
     const pathObj = _getRegionBucketPath(path);
-    cos.getObjectUrl(
-        {
-            Bucket: pathObj.bucket, /* 填入您自己的存储桶，必须字段 */
-            Region: pathObj.region, /* 存储桶所在地域，例如 ap-beijing，必须字段 */
-            Key: pathObj.filePath, /* 存储在桶里的对象键（例如1.jpg，a/b/test.txt），支持中文，必须字段 */
-            Sign: true,
-        },
-        function (err, data) {
-            if (err) return console.error(err);
-            var req = request(data.Url, function (err: string, response: any, body: any) {
+    return new Promise((resolve, reject) => {
+        cos.getObjectUrl(
+            {
+                Bucket: pathObj.bucket, /* 填入您自己的存储桶，必须字段 */
+                Region: pathObj.region, /* 存储桶所在地域，例如 ap-beijing，必须字段 */
+                Key: pathObj.filePath, /* 存储在桶里的对象键（例如1.jpg，a/b/test.txt），支持中文，必须字段 */
+                Sign: true,
+            },
+            function (err, data) {
                 if (err) {
-                    console.error(err);
+                    reject(err);
+                    return;
                 }
-            });
-            var writeStream = fs.createWriteStream(localPath);
-            req.pipe(writeStream);
-        }
-    );
+
+                var writeStream = fs.createWriteStream(localPath);
+                request(data.Url).on('response', (response) => {
+                        if (!/^image\//.test(response.headers['content-type'] as string)) {
+                            writeStream.close();
+                            fs.unlinkSync(localPath);
+                            reject(new Error('Download failed: Unauthorized'));
+                        }
+                    })
+                    .pipe(writeStream)
+                    .on('finish', resolve)
+                    .on('error', (error) => {
+                        writeStream.close();
+                        fs.unlinkSync(localPath);
+                        reject(error);
+                    });
+            }
+        );
+    })
 }
 
 

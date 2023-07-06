@@ -80,7 +80,7 @@ async function main() {
             let localPath = localDir + "/" + fileName;
             if (!fs.existsSync(localPath) || localPhotos[fileName] === undefined) {
                 try {
-                    downloadCosPath(cos, cloudPath, localPath)
+                    await downloadCosPath(cos, cloudPath, localPath)
                     numDownload++;
                     stdlog(`, downloaded to ${localPath}\n`, "green");
                 } catch (err) {
