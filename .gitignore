@@ -3,6 +3,7 @@ node_modules/
 # 拉取的图片
 photos/
 crop_photos/
+photos_bak/
 # 训练数据和模型文件
 lightning_logs/
 checkpoints/
@@ -21,3 +22,5 @@ config.ts
 .ipynb_checkpoints/
 env
 .vscode
+
+laf/models/
