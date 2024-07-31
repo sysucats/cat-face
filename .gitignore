@@ -3,9 +3,12 @@ node_modules/
 # 拉取的图片
 photos/
 crop_photos/
+dataset-cat/
+dataset-fallback/
 # 训练数据和模型文件
 lightning_logs/
 checkpoints/
+runs/
 # 模型导出文件
 export/
 # Python 垃圾
