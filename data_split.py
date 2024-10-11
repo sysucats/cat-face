@@ -47,9 +47,12 @@ ids = []
 
 # 定义一个函数来缩放图片
 def resize_image(image_path, output_path, size):
-    with Image.open(image_path) as img:
-        img = img.resize(size, Image.LANCZOS)  # 使用Image.LANCZOS
-        img.save(output_path)
+    try:
+        with Image.open(image_path) as img:
+            img = img.resize(size, Image.LANCZOS)  # 使用Image.LANCZOS
+            img.save(output_path)
+    except Exception as e:
+        print(e)
 
 
 # 遍历每个种类的文件夹
