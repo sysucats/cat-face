@@ -3,13 +3,15 @@ import shutil
 import torch
 from tqdm import tqdm
 from PIL import Image
+from ultralytics import YOLO
 
 SRC = "data/photos"
 DEST = "data/crop_photos"
 
 if __name__ == "__main__":
-    print("loading YOLOv5 model...")
-    model = torch.hub.load("yolov5", "custom", "yolov5/yolov5m.pt", source="local")
+    print("loading YOLO11 model...")
+    model = YOLO("yolo11m-cls.pt")
+    # model = torch.hub.load("yolov5", "custom", "yolov5/yolov5m.pt", source="local")
 
     num_photos = 0
     num_skipped_photos = 0

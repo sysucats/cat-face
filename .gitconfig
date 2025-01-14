@@ -1,0 +1,5 @@
+[http]
+        sslVerify = false
+        postBuffer = 1048576000
+[url "https://gitclone.com/"]
+        insteadOf = https://

@@ -24,3 +24,4 @@ config.ts
 .ipynb_checkpoints/
 env
 .vscode
+.gitconfig
