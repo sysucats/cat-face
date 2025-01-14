@@ -10,8 +10,8 @@ DEST = "data/crop_photos"
 
 if __name__ == "__main__":
     print("loading YOLO11 model...")
-    model = YOLO("yolo11m-cls.pt")
-    # model = torch.hub.load("yolov5", "custom", "yolov5/yolov5m.pt", source="local")
+    # model = YOLO("yolo11m-cls.pt")
+    model = torch.hub.load("yolov5", "custom", "yolov5/yolov5m.pt", source="local")
 
     num_photos = 0
     num_skipped_photos = 0

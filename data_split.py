@@ -65,6 +65,19 @@ for category in categories:
         if os.path.isfile(os.path.join(category_path, f))
     ]
 
+    # 如果图片数量不足 args.filter，则进行补充
+    if len(images) < args.filter:
+        print(f"Category '{category}' has less than {args.filter} images. Augmenting...")
+        while len(images) < args.filter:
+            # 随机选择一张图片进行复制
+            random_image = random.choice(images)
+            new_image_name = f"copy_{len(images)}_{random_image}"
+            shutil.copy(
+                os.path.join(category_path, random_image),
+                os.path.join(category_path, new_image_name),
+            )
+            images.append(new_image_name)
+
     # 检查图片数量是否至少为args.filter张
     if len(images) < args.filter:
         print(f"Skipping category '{category}' with less than {args.filter} images.")
