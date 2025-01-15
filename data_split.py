@@ -3,6 +3,8 @@ import os
 from sklearn.model_selection import train_test_split
 import argparse
 import json
+import random
+import shutil
 
 parser = argparse.ArgumentParser(description="Cat Recognize Data Preprocessor")
 parser.add_argument(
@@ -66,7 +68,7 @@ for category in categories:
     ]
 
     # 如果图片数量不足 args.filter，则进行补充
-    if len(images) < args.filter:
+    if len(images) != 0 and len(images) < args.filter:
         print(f"Category '{category}' has less than {args.filter} images. Augmenting...")
         while len(images) < args.filter:
             # 随机选择一张图片进行复制

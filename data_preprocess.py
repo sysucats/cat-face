@@ -44,7 +44,7 @@ if __name__ == "__main__":
             # 过滤非cat目标
             cat_results = list(filter(lambda target: target["name"] == "cat", results))
             # 跳过图片内检测不到cat或有多个cat的图片
-            if len(cat_results) != 1:
+            if len(cat_results) == 0:
                 num_skipped_photos += 1
                 continue
             # 裁剪出cat
