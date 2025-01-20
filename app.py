@@ -12,6 +12,7 @@ import json
 import time
 from base64 import b64encode
 from hashlib import sha256
+from ultralytics import YOLO
 
 load_dotenv("./env", override=True)
 
@@ -32,7 +33,8 @@ assert os.path.isdir(
     "export"
 ), "*** export directory not found! you should export the training checkpoint to ONNX model."
 
-crop_model = torch.hub.load("yolov5", "custom", "yolov5/yolov5m.onnx", source="local")
+# crop_model = torch.hub.load("yolov5", "custom", "yolov5/yolov5m.onnx", source="local")
+crop_model = YOLO("yolo11m.pt")
 
 with open("export/cat.json", "r") as fp:
     cat_ids = json.load(fp)
@@ -82,9 +84,14 @@ def recognize_cat_photo():
 
         src_img = Image.open(photo).convert("RGB")
         # 使用 YOLOv5 进行目标检测，结果为[{xmin, ymin, xmax, ymax, confidence, class, name}]格式
-        results = crop_model(src_img).pandas().xyxy[0].to_dict("records")
+        results = crop_model(src_img)
         # 过滤非cat目标
-        cat_results = list(filter(lambda target: target["name"] == "cat", results))
+        cat_results = []
+        for result in results:
+            for box in result.boxes:
+                # print(result.names[box.cls.tolist()[0]], box.xyxy.tolist())
+                if result.names[box.cls.tolist()[0]] == "cat":
+                    cat_results.append(box.xyxy.tolist())
 
         if len(cat_results) >= 1:
             cat_idx = (
@@ -97,10 +104,10 @@ def recognize_cat_photo():
             # 裁剪出(指定的)cat
             cat_result = cat_results[cat_idx]
             crop_box = (
-                cat_result["xmin"],
-                cat_result["ymin"],
-                cat_result["xmax"],
-                cat_result["ymax"],
+                cat_result[0][0],
+                cat_result[0][1],
+                cat_result[0][2],
+                cat_result[0][3],
             )
             # 裁剪后直接resize到正方形
             src_img = src_img.crop(crop_box).resize((IMG_SIZE, IMG_SIZE))
@@ -143,10 +150,10 @@ def recognize_cat_photo():
             {
                 "catBoxes": [
                     {
-                        "xmin": item["xmin"],
-                        "ymin": item["ymin"],
-                        "xmax": item["xmax"],
-                        "ymax": item["ymax"],
+                        "xmin": item[0][0],
+                        "ymin": item[0][1],
+                        "xmax": item[0][2],
+                        "ymax": item[0][3],
                     }
                     for item in cat_results
                 ][:CAT_BOX_MAX_RET_NUM],
