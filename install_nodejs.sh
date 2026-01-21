@@ -9,3 +9,4 @@ echo 'export PATH=$NODE_HOME/bin:$PATH' | tee -a /etc/profile
 source /etc/profile
 node -v
 npm -v
+npm config set registry https://registry.npmmirror.com

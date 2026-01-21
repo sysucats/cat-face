@@ -49,3 +49,5 @@ torchmetrics>=0.9.3
 onnxruntime>=1.12.1
 python-dotenv>=0.21.0
 Flask>=2.2.2
+ultralytics>=8.2.68
+scikit_learn>=1.3.0
