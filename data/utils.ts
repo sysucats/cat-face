@@ -1,7 +1,6 @@
 import fs from 'fs';
 import request from "request";
 
-import { Cloud } from "laf-client-sdk";
 import COS from 'cos-nodejs-sdk-v5';
 import { config } from "./config";
 
@@ -18,16 +17,34 @@ export function stdlog(content: string, color: string = 'default') {
         white: '\x1B[37m',
         default: '',
     };
-
-    // 输出
     process.stdout.write(`${colorsDict[color]}${content}\x1B[0m`);
 }
 
-export function getCos() {
+export function clearLine() {
+    process.stdout.clearLine(1);
+}
+
+function _getCosKey() {
+    return new Promise((resolve, reject) => {
+        request.post({
+            url: `https://${config.LAF_APPID}.laf.run/getTempCOS`,
+        }, function (err, httpResponse, body) {
+            if (err) {
+                reject(err)
+            } else {
+                resolve(JSON.parse(body))
+            }
+        });
+    });
+
+}
+
+export async function getCos() {
+    let cosKey: any = await _getCosKey();
     var cos = new COS({
         getAuthorization: async function (options: Object, callback: Function) {
             // 初始化时不会调用，只有调用 cos 方法（例如 cos.putObject）时才会进入
-            var cosTemp = config.COS_KEY;
+            var cosTemp = cosKey;
             if (!cosTemp || !cosTemp.Credentials) {
                 console.error("无效cosTemp信息: ", cosTemp)
                 callback({
@@ -53,7 +70,7 @@ export function getCos() {
 
 
 export function downloadCosPath(cos: COS, path: string, localPath: string) {
-    const pathObj = _getRegionBucketPath(path);
+    const pathObj = getRegionBucketPath(path);
     return new Promise((resolve, reject) => {
         cos.getObjectUrl(
             {
@@ -64,25 +81,32 @@ export function downloadCosPath(cos: COS, path: string, localPath: string) {
             },
             function (err, data) {
                 if (err) {
+                    stdlog(" downloadCosPath error");
                     reject(err);
                     return;
                 }
 
                 var writeStream = fs.createWriteStream(localPath);
-                request(data.Url).on('response', (response) => {
+                try {
+                    request(data.Url).on('response', (response) => {
                         if (!/^image\//.test(response.headers['content-type'] as string)) {
                             writeStream.close();
                             fs.unlinkSync(localPath);
                             reject(new Error('Download failed: Unauthorized'));
                         }
                     })
-                    .pipe(writeStream)
-                    .on('finish', resolve)
-                    .on('error', (error) => {
-                        writeStream.close();
-                        fs.unlinkSync(localPath);
-                        reject(error);
-                    });
+                        .pipe(writeStream)
+                        .on('finish', resolve)
+                        .on('error', (error) => {
+                            writeStream.close();
+                            fs.unlinkSync(localPath);
+                            stdlog(" downloadCosPath error");
+                            reject(error);
+                        });
+                } catch (err) {
+                    stdlog(" request err");
+                    reject(err);
+                }
             }
         );
     })
@@ -95,7 +119,7 @@ function _splitOnce(str: string, sep: string) {
 }
 
 // 提取COS的region和bucket字段
-function _getRegionBucketPath(url: string) {
+export function getRegionBucketPath(url: string) {
     // 返回：{region: 'ap-guangzhou', bucket: 'bucket-name', filePath: "xxx/xxx.xxx"}
     const regex = /http[s]*:\/\//i;
     const newUrl = url.replace(regex, '');

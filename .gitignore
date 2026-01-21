@@ -1,7 +1,7 @@
 # npm包
 node_modules/
 # 拉取的图片
-photos/
+photos*/
 crop_photos/
 # 训练数据和模型文件
 lightning_logs/
@@ -21,3 +21,4 @@ config.ts
 .ipynb_checkpoints/
 env
 .vscode
+data/done

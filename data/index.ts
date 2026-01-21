@@ -1,7 +1,7 @@
 import fs from 'fs';
 // import dotenv from 'dotenv';
 import { Cloud } from "laf-client-sdk";
-import { stdlog, downloadCosPath, getCos } from './utils';
+import { stdlog, downloadCosPath, getCos, getRegionBucketPath, clearLine } from './utils';
 import { config } from "./config";
 
 // dotenv.config({ path: './env' });
@@ -14,8 +14,6 @@ const cloud = new Cloud({
 });
 const db = cloud.database();
 
-// 初始化cos
-const cos = getCos();
 
 async function main() {
     stdlog("Scaning local files...", "yellow");
@@ -52,24 +50,28 @@ async function main() {
     let curNum = 0;
     let numDownload = 0;
 
+    let cos :any = await getCos();
+
     for (let i = 0; i < photoNumQuery; i++) {
         let photos = (await db.collection("photo").skip(i * MAX_LIMIT).limit(MAX_LIMIT).get()).data;
 
         for (let photo of photos) {
             curNum++;
-            stdlog(`[${curNum}/${photoCount}] `);
+            stdlog(`\r[${curNum}/${photoCount}] `);
 
             let catId = photo.cat_id;
             let cloudPath = photo.photo_compressed;// photo.photo_compressed || photo.photo_id;
             stdlog("cat: ");
             stdlog(catId, "magenta");
-            stdlog(", photo path: ");
-            stdlog(cloudPath, "blue");
+            stdlog(", url: ");
 
             if (!cloudPath) {
-                stdlog(", skipped for unavailable cloud path.\n", "red");
+                stdlog(", skipped for unavailable cloud path.", "red");
+                clearLine();
+                stdlog("\n");
                 continue;
             }
+            stdlog(getRegionBucketPath(cloudPath).filePath, "blue");
 
             let fileName = cloudPath.split("/").pop();
 
@@ -80,15 +82,23 @@ async function main() {
             let localPath = localDir + "/" + fileName;
             if (!fs.existsSync(localPath) || localPhotos[fileName] === undefined) {
                 try {
+                    if (curNum % 100 === 0) {
+                        // 初始化cos
+                        cos = await getCos();
+                    }
                     await downloadCosPath(cos, cloudPath, localPath)
                     numDownload++;
-                    stdlog(`, downloaded to ${localPath}\n`, "green");
+                    stdlog(`, downloaded to ${localPath}`, "green");
+                    clearLine();
                 } catch (err) {
-                    stdlog(`, failed download, message: ${err}.\n`, "red");
+                    stdlog(`, failed download, message: ${err}.`, "red");
+                    clearLine();
+                    stdlog("\n");
                 }
             } else {
                 localPhotos[fileName]!.cloudStatusCheck = true;
-                stdlog(`, already downloaded at ${localPath}.\n`, "green");
+                stdlog(`, already at ${localPath}`, "green");
+                clearLine();
             }
         }
     }
@@ -112,6 +122,34 @@ async function main() {
     }
 
     stdlog(`Done. ${numDownload} photos downloaded, ${numDelete} photos deleted. (${numCatDelete} cats deleted for no photo exists anymore.)\n`, "magenta");
+
+    // 使用writeFile函数创建done文件
+    fs.writeFile("./done", '', (err) => {
+        if (err) throw err;
+    });
 }
 
 main();
+
+// process.on('uncaughtException', (err) => {
+//     console.error('Uncaught Exception:', err);
+//     // 可以在这里添加一些错误处理逻辑
+// });
+
+// process.on('unhandledRejection', (reason, promise) => {
+//     console.error('Unhandled Rejection:', reason);
+//     // 可以在这里添加一些错误处理逻辑
+// });
+
+// let retryTimes = 50;
+
+// while (retryTimes) {
+//     try {
+//         main();
+//         stdlog("done");
+//         break;
+//     } catch (err) {
+//         retryTimes --;
+//         stdlog(`err: ${err}\nretry, last ${retryTimes}...`, "yellow");
+//     }
+// }
