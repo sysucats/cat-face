@@ -2,6 +2,17 @@ from ultralytics import YOLO
 import argparse
 import os
 import shutil
+import torch
+
+# ==================== GPU配置核心部分 ====================
+# 1. 检查GPU是否可用
+if torch.cuda.is_available():
+    device = 0  # 使用第0块GPU（多GPU可设为[0,1]或具体编号）
+    print(f"✅ 使用GPU训练，设备编号: {device}")
+    print(f"📌 GPU名称: {torch.cuda.get_device_name(device)}")
+else:
+    device = 'cpu'
+    print("⚠️ 未检测到GPU，将使用CPU训练（速度较慢）")
 
 
 def main():
@@ -26,7 +37,7 @@ def main():
     model = YOLO("yolo11m-cls.pt")
     export_dir = "./export"
 
-    results = model.train(data=f"{args.data}", epochs=args.epoch, imgsz=args.size)
+    results = model.train(data=f"{args.data}", epochs=args.epoch, imgsz=args.size, device=device)
 
     # Export the model
     path_to_model = model.export(format="onnx")

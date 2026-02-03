@@ -1,8 +1,8 @@
-python3 data_preprocess.py
-python3 data_split.py
-python3 data_split.py --name fallback --source data/photos --size 512
-python3 train.py
-python3 train.py --data data/dataset-fallback --name fallback --size 512
+python data_preprocess.py
+python data_split.py
+python data_split.py --name fallback --source data/photos --size 512
+python train.py
+python train.py --data data/dataset-fallback --name fallback --size 512
 rm -rf data/crop_photos
 rm -rf data/dataset-fallback
 rm -rf data/dataset-cat

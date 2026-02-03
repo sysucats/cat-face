@@ -41,8 +41,9 @@ if __name__ == "__main__":
                 # results = model(src_file_path).pandas().xyxy[0].to_dict("records")
                 results = model(src_file_path)
                 # print(results[0].boxes.xyxy.tolist(), results[0].names[results[0].boxes.cls.tolist()[0]])
-            except OSError as err:
+            except Exception as err:
                 # 发现有的图片有问题，会导致 PIL 抛出 OSError: image file is truncated
+                # 全部都跳过
                 num_skipped_photos += 1
                 continue
             # 过滤非cat目标

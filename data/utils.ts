@@ -1,8 +1,16 @@
 import fs from 'fs';
-import request from "request";
+import axios from "axios";
 
 import COS from 'cos-nodejs-sdk-v5';
-import { config } from "./config";
+import MPServerless from '@alicloud/mpserverless-node-sdk';
+import { space_id, private_key, space_endpoint } from './config'
+
+    
+const mpServerless = new MPServerless({
+    spaceId: space_id, // 服务空间标识
+    endpoint: space_endpoint, // 服务空间地址，从小程序 serverless 控制台处获得
+    serverSecret: private_key,
+});
 
 export function stdlog(content: string, color: string = 'default') {
     // 定义颜色
@@ -24,23 +32,9 @@ export function clearLine() {
     process.stdout.clearLine(1);
 }
 
-function _getCosKey() {
-    return new Promise((resolve, reject) => {
-        request.post({
-            url: `https://${config.LAF_APPID}.laf.run/getTempCOS`,
-        }, function (err, httpResponse, body) {
-            if (err) {
-                reject(err)
-            } else {
-                resolve(JSON.parse(body))
-            }
-        });
-    });
-
-}
 
 export async function getCos() {
-    let cosKey: any = await _getCosKey();
+    let cosKey = (await mpServerless.function.invoke("getTempCOS") as any).result;
     var cos = new COS({
         getAuthorization: async function (options: Object, callback: Function) {
             // 初始化时不会调用，只有调用 cos 方法（例如 cos.putObject）时才会进入
@@ -68,6 +62,17 @@ export async function getCos() {
     return cos;
 }
 
+// 封装同步操作的错误捕获（比如 fs.unlinkSync）
+function safeUnlink(path: string) {
+  try {
+    if (fs.existsSync(path)) { // 先判断文件是否存在，避免不存在时报错
+      fs.unlinkSync(path);
+    }
+  } catch (unlinkErr) {
+    stdlog(`删除文件失败 ${path}, 错误信息: ${unlinkErr}`, 'red');
+  }
+}
+
 
 export function downloadCosPath(cos: COS, path: string, localPath: string) {
     const pathObj = getRegionBucketPath(path);
@@ -88,21 +93,44 @@ export function downloadCosPath(cos: COS, path: string, localPath: string) {
 
                 var writeStream = fs.createWriteStream(localPath);
                 try {
-                    request(data.Url).on('response', (response) => {
-                        if (!/^image\//.test(response.headers['content-type'] as string)) {
-                            writeStream.close();
-                            fs.unlinkSync(localPath);
-                            reject(new Error('Download failed: Unauthorized'));
-                        }
-                    })
-                        .pipe(writeStream)
-                        .on('finish', resolve)
-                        .on('error', (error) => {
-                            writeStream.close();
-                            fs.unlinkSync(localPath);
-                            stdlog(" downloadCosPath error");
-                            reject(error);
-                        });
+          // 发起请求，使用 axios 库
+          axios({
+            url: data.Url,
+            method: 'GET',
+            timeout: 30 * 1000, // 超时
+            responseType: 'stream' // 以流的形式获取响应
+          })
+            .then((response) => {
+              // 提前判断内容类型
+              if (!/^image\//.test(response.headers['content-type'] as string)) {
+                safeUnlink(localPath);
+                reject(new Error('Download failed: Unauthorized (not image type)'));
+                return;
+              }
+              
+              // 管道传输文件
+              response.data.pipe(writeStream)
+                .on('finish', () => {
+                  resolve(void 0);
+                })
+                .on('error', (pipeError: Error) => { // 管道错误监听
+                  stdlog(`downloadCosPath pipe error: ${pipeError.message}`, 'red');
+                  safeUnlink(localPath);
+                  reject(pipeError);
+                });
+            })
+            .catch((error) => {
+              stdlog(`downloadCosPath request error: ${error.message}`, 'red');
+              // 终止流并清理文件
+              if (writeStream) writeStream.destroy();
+              safeUnlink(localPath);
+              // 精准识别超时错误，方便调用方处理
+              if (error.code === 'ECONNABORTED') {
+                reject(new Error(`连接超时`));
+              } else {
+                reject(error);
+              }
+            });
                 } catch (err) {
                     stdlog(" request err");
                     reject(err);

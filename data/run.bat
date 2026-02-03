@@ -11,8 +11,8 @@ if errorlevel 1 (
 goto :eof
 
 :retry
-echo sleep 1 min
-timeout /t 60 >nul
+echo sleep 5 sec
+timeout /t 5 >nul
 goto loop
 
 echo Command executed successfully on iteration %count%.

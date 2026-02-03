@@ -8,9 +8,14 @@
     "start": "ts-node ./index.ts"
   },
   "dependencies": {
+    "@alicloud/credentials": "^2.4.4",
+    "@alicloud/mpserverless-node-sdk": "^1.2.3",
+    "@alicloud/mpserverless20190615": "^2.0.0",
+    "@alicloud/openapi-client": "^0.4.15",
+    "@alicloud/tea-util": "^1.4.11",
     "@types/request": "^2.48.8",
     "cos-nodejs-sdk-v5": "^2.12.1",
-    "laf-client-sdk": "^1.0.0-beta.8"
+    "request": "^2.88.2"
   },
   "devDependencies": {
     "ts-node": "^10.4.0",
