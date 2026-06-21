@@ -76,7 +76,30 @@ node pack-emas.js --trim
 
 生成 `../catFace.zip`（约 176MB），含 Linux 平台二进制，裁剪掉 win32/darwin。
 
-上传 `catFace.zip` 到 EMAS Serverless 平台即可。
+上传 `catFace.zip` 到 EMAS Serverless 平台。
+
+### EMAS 云函数环境设置
+
+上传后在 EMAS 控制台按以下参数配置：
+
+| 参数 | 值 |
+|------|-----|
+| 运行环境 | Node.js 20 |
+| 函数执行内存 | **1024 MB** |
+| 超时时间 | **30 s** |
+
+### EMAS 数据库前置条件
+
+函数运行时自动从 `app_secret` 集合读取 `SECRET_KEY` 字段用于签名校验。
+
+确保 EMAS 数据库中存在该集合且包含 `SECRET_KEY` 字段：
+
+```javascript
+// app_secret 文档示例
+{
+  SECRET_KEY: "你的签名密钥"
+}
+```
 
 ## 文件结构
 
