@@ -27,3 +27,11 @@ env
 .gitconfig
 data/done
 yolo26n.pt
+catFace.zip
+.workbuddy
+yolo11m.onnx
+node-server/models/cat.json
+node-server/models/cat.onnx
+node-server/models/fallback.json
+node-server/models/fallback.onnx
+node-server/test/emas-request.json

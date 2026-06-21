@@ -1,0 +1,19 @@
+{
+  "name": "cat-face-node-server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "commonjs",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "multer": "^1.4.5-lts.1",
+    "onnxruntime-node": "1.20.1",
+    "sharp": "^0.33.5"
+  }
+}

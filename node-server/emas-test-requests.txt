@@ -1,0 +1,177 @@
+========================================
+  cat-face EMAS 测试请求 JSON 模板
+========================================
+
+以下 4 个请求模板可直接复制到 EMAS 网页测试框使用。
+按顺序测试可验证函数各项功能是否正常。
+
+⚠️ EMAS 测试框会把整个 JSON 作为 ctx.args 传给云函数，
+   所以这里直接写 args 的内容，不要再外包一层 "args"。
+
+────────────────────────────────────────
+【请求 1】部署冒烟测试（最简单，先测这个）
+────────────────────────────────────────
+用途：验证函数能否正常加载、入口是否正确。不触发模型加载。
+
+{
+  "deploy_test": true
+}
+
+期望返回：
+"v1.0"
+
+
+────────────────────────────────────────
+【请求 2】缺参校验测试
+────────────────────────────────────────
+用途：验证参数校验逻辑是否正常工作。不触发模型加载。
+
+{
+  "photoBase64": "",
+  "timestamp": 0,
+  "signature": ""
+}
+
+期望返回：
+{
+  "ok": false,
+  "message": "missing photoBase64 or photoURL",
+  "data": null
+}
+
+
+────────────────────────────────────────
+【请求 3】签名校验测试
+────────────────────────────────────────
+用途：验证签名校验逻辑。传入错误签名应被拒绝。
+
+{
+  "photoBase64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+  "timestamp": 0,
+  "signature": "wrong_signature_should_be_rejected"
+}
+
+期望返回：
+{
+  "ok": false,
+  "message": "signature verification failed",
+  "data": null
+}
+
+说明：photoBase64 是一个 1x1 透明 PNG 的 base64，仅作占位；
+timestamp=0 必然超出 TOLERANT_TIME_ERROR 范围，会先因时间戳被拒。
+
+
+────────────────────────────────────────
+【请求 4】完整识别测试（需要真实数据）
+────────────────────────────────────────
+用途：端到端验证识别流程。需要真实的图片和合法签名。
+
+⚠️ 注意：
+- photoURL 必须是公网可访问的猫咪图片 URL
+- timestamp 必须是当前时间戳（秒），超时会被拒
+- signature 需用 SECRET_KEY 按算法计算，见下方生成方法
+
+{
+  "photoURL": "https://替换为真实的猫咪图片URL.jpg",
+  "timestamp": 1750000000,
+  "signature": "替换为用SECRET_KEY计算出的签名"
+}
+
+期望返回（识别成功）：
+{
+  "ok": true,
+  "message": "OK",
+  "data": {
+    "catBoxes": [
+      {
+        "xmin": 100.0,
+        "ymin": 50.0,
+        "xmax": 300.0,
+        "ymax": 400.0
+      }
+    ],
+    "recognizeResults": [
+      {
+        "catID": "XJtU7JT75u2201yT",
+        "score": 0.9998
+      },
+      ...
+    ]
+  }
+}
+
+
+========================================
+  签名生成方法（用于请求 4）
+========================================
+
+签名算法：
+  SHA256( base64(图片原始字节) + str(timestamp) + SECRET_KEY )
+
+Python 生成方式：
+  import time, hashlib, base64, requests
+  from urllib.parse import urlparse
+
+  # 1. 下载图片
+  url = "https://你的猫咪图片URL.jpg"
+  photo_bytes = requests.get(url).content
+
+  # 2. 计算签名
+  timestamp = int(time.time())
+  secret_key = "你的SECRET_KEY"  # 与 EMAS 控制台配置一致
+  b64 = base64.b64encode(photo_bytes).decode()
+  signature = hashlib.sha256((b64 + str(timestamp) + secret_key).encode()).hexdigest()
+
+  # 3. 打印可直接粘贴到 EMAS 测试框的 JSON（不要外包 args）
+  import json
+  print(json.dumps({
+      "photoURL": url,
+      "timestamp": timestamp,
+      "signature": signature
+  }, ensure_ascii=False, indent=2))
+
+Node.js 生成方式（本地图片，直接生成完整 JSON 文件）：
+  见 test/gen-emas-request.js，用法：
+    node test/gen-emas-request.js <图片路径> [-o 输出文件]
+
+  手写版：
+  const crypto = require('crypto');
+  const https = require('https');
+
+  const url = "https://你的猫咪图片URL.jpg";
+  const secretKey = "你的SECRET_KEY";
+
+  https.get(url, (res) => {
+    const chunks = [];
+    res.on('data', c => chunks.push(c));
+    res.on('end', () => {
+      const photoBuffer = Buffer.concat(chunks);
+      const timestamp = Math.floor(Date.now() / 1000);
+      const b64 = photoBuffer.toString('base64');
+      const signature = crypto.createHash('sha256')
+        .update(b64 + String(timestamp) + secretKey, 'utf8')
+        .digest('hex');
+
+      console.log(JSON.stringify({
+        photoURL: url, timestamp, signature
+      }, null, 2));
+    });
+  });
+
+
+========================================
+  测试顺序建议
+========================================
+
+1. 先测【请求 1】deploy_test —— 确认函数能跑起来
+2. 再测【请求 2】缺参 —— 确认参数校验正常
+3. 再测【请求 3】签名拒绝 —— 确认签名校验生效
+4. 最后测【请求 4】完整识别 —— 确认模型加载和推理正常
+
+如果请求 4 超时或返回错误，可能原因：
+- 模型未正确打包（检查 models/ 目录是否含 5 个文件）
+- onnxruntime-node 原生模块不兼容（检查是否用 --no-deps 让 EMAS 安装 Linux 版）
+- sharp 原生模块不兼容（同上）
+- photoURL 无法访问（确保是公网 URL）
+- timestamp 超时（TOLERANT_TIME_ERROR 默认 60 秒，要尽快测试）
